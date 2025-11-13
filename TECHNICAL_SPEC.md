@@ -76,6 +76,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
   end
 
   # User Content Tables
+  
+  # Simple bookmarks - quick verse markers
   create_table "bookmarks", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "verse_id", null: false
@@ -90,19 +92,51 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
     t.index ["created_at"], name: "index_bookmarks_on_created_at"
   end
 
+  # Highlights - character-level text selections
+  create_table "highlights", force: :cascade do |t|
+    t.integer "user_id", null: false
+    t.integer "chapter_id", null: false       # Primary chapter context
+    t.integer "start_verse_id", null: false   # Starting verse
+    t.integer "start_offset", null: false     # Character offset in start verse
+    t.integer "end_verse_id", null: false     # Ending verse (can be same)
+    t.integer "end_offset", null: false       # Character offset in end verse
+    t.text "selected_text"                    # Denormalized for quick display
+    t.string "color", default: "#FFEB3B"      # Highlight color
+    t.string "tags", array: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    
+    t.index ["user_id"], name: "index_highlights_on_user_id"
+    t.index ["chapter_id"], name: "index_highlights_on_chapter_id"
+    t.index ["start_verse_id"], name: "index_highlights_on_start_verse"
+    t.index ["created_at"], name: "index_highlights_on_created_at"
+  end
+
+  # Notes - loosely coupled to chapters, not verses
   create_table "notes", force: :cascade do |t|
     t.integer "user_id", null: false
-    t.integer "verse_id", null: false
+    t.integer "chapter_id", null: false        # Associated with chapter context
     t.boolean "private", default: true
     t.string "tags", array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     
-    t.index ["user_id", "verse_id"], name: "index_notes_on_user_and_verse"
+    t.index ["user_id", "chapter_id"], name: "index_notes_on_user_and_chapter"
     t.index ["user_id"], name: "index_notes_on_user_id"
-    t.index ["verse_id"], name: "index_notes_on_verse_id"
+    t.index ["chapter_id"], name: "index_notes_on_chapter_id"
     t.index ["private"], name: "index_notes_on_private"
     t.index ["created_at"], name: "index_notes_on_created_at"
+  end
+  
+  # Note verse references - optional verse tags within notes
+  create_table "note_verse_references", force: :cascade do |t|
+    t.integer "note_id", null: false
+    t.integer "verse_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    
+    t.index ["note_id"], name: "index_note_verse_refs_on_note"
+    t.index ["verse_id"], name: "index_note_verse_refs_on_verse"
   end
 
   # Action Text (for rich text notes)
@@ -802,6 +836,145 @@ export default class extends Controller {
 ```
 
 ```javascript
+// app/javascript/controllers/text_highlighter_controller.js
+import { Controller } from "@hotwired/stimulus"
+
+export default class extends Controller {
+  static values = {
+    chapterId: Number,
+    userId: Number
+  }
+
+  connect() {
+    // Add selection event listener
+    this.element.addEventListener('mouseup', this.handleSelection.bind(this))
+    this.element.addEventListener('touchend', this.handleSelection.bind(this))
+  }
+
+  handleSelection(event) {
+    const selection = window.getSelection()
+    const selectedText = selection.toString().trim()
+    
+    if (selectedText.length === 0) return
+    
+    // Get selection range details
+    const range = selection.getRangeAt(0)
+    const startContainer = range.startContainer
+    const endContainer = range.endContainer
+    
+    // Find verse elements
+    const startVerse = this.findVerseElement(startContainer)
+    const endVerse = this.findVerseElement(endContainer)
+    
+    if (!startVerse || !endVerse) return
+    
+    // Calculate character offsets within verses
+    const startOffset = this.getCharacterOffset(startVerse, startContainer, range.startOffset)
+    const endOffset = this.getCharacterOffset(endVerse, endContainer, range.endOffset)
+    
+    // Show highlight menu
+    this.showHighlightMenu(event, {
+      startVerseId: startVerse.dataset.verseId,
+      endVerseId: endVerse.dataset.verseId,
+      startOffset: startOffset,
+      endOffset: endOffset,
+      selectedText: selectedText
+    })
+  }
+
+  findVerseElement(node) {
+    while (node && node !== this.element) {
+      if (node.classList && node.classList.contains('verse')) {
+        return node
+      }
+      node = node.parentNode
+    }
+    return null
+  }
+
+  getCharacterOffset(verseElement, node, offset) {
+    // Calculate character offset from start of verse text
+    const range = document.createRange()
+    range.setStart(verseElement, 0)
+    range.setEnd(node, offset)
+    return range.toString().length
+  }
+
+  showHighlightMenu(event, selectionData) {
+    // Create and position floating menu
+    const menu = document.createElement('div')
+    menu.className = 'highlight-menu'
+    menu.innerHTML = `
+      <button data-action="click->text-highlighter#createHighlight" 
+              data-color="#FFEB3B">Yellow</button>
+      <button data-action="click->text-highlighter#createHighlight" 
+              data-color="#A5D6A7">Green</button>
+      <button data-action="click->text-highlighter#createHighlight" 
+              data-color="#90CAF9">Blue</button>
+      <button data-action="click->text-highlighter#createNote">Note</button>
+    `
+    
+    // Store selection data
+    this.selectionData = selectionData
+    
+    // Position menu near selection
+    menu.style.position = 'absolute'
+    menu.style.top = `${event.pageY + 10}px`
+    menu.style.left = `${event.pageX}px`
+    
+    document.body.appendChild(menu)
+    this.currentMenu = menu
+  }
+
+  createHighlight(event) {
+    const color = event.target.dataset.color
+    
+    fetch('/highlights', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': this.csrfToken
+      },
+      body: JSON.stringify({
+        highlight: {
+          chapter_id: this.chapterIdValue,
+          start_verse_id: this.selectionData.startVerseId,
+          start_offset: this.selectionData.startOffset,
+          end_verse_id: this.selectionData.endVerseId,
+          end_offset: this.selectionData.endOffset,
+          selected_text: this.selectionData.selectedText,
+          color: color
+        }
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      this.applyHighlight(data.highlight)
+      this.closeMenu()
+    })
+  }
+
+  applyHighlight(highlight) {
+    // Apply visual highlight to the selected text
+    // This would wrap the selected text in a <mark> element
+    // Implementation depends on specific DOM structure
+  }
+
+  closeMenu() {
+    if (this.currentMenu) {
+      this.currentMenu.remove()
+      this.currentMenu = null
+    }
+    window.getSelection().removeAllRanges()
+  }
+
+  get csrfToken() {
+    return document.querySelector("[name='csrf-token']").content
+  }
+}
+```
+
+```javascript
 // app/javascript/controllers/verse_controller.js
 import { Controller } from "@hotwired/stimulus"
 
@@ -842,13 +1015,24 @@ module.exports = {
       colors: {
         'red-letter': '#c41e3a',
         'red-letter-dark': '#ff6b6b',
+        'page-bg': '#FFFEF7',
+        'page-bg-dark': '#1a1a1a',
       },
       fontFamily: {
-        'bible': ['Georgia', 'serif'],
+        'bible': ['Georgia', 'Baskerville', 'serif'],
         'sans': ['Inter', 'sans-serif'],
       },
       fontSize: {
         'verse': ['18px', { lineHeight: '1.8' }],
+      },
+      gridTemplateColumns: {
+        'bible-pages': 'repeat(2, minmax(0, 600px))',
+      },
+      columnCount: {
+        'bible': '2',
+      },
+      columnGap: {
+        'bible': '3rem',
       }
     },
   },
@@ -856,6 +1040,158 @@ module.exports = {
     require('@tailwindcss/forms'),
     require('@tailwindcss/typography'),
   ],
+}
+```
+
+### CSS for Multi-Column and Side-by-Side Layout
+
+```css
+/* app/assets/stylesheets/bible_layout.css */
+
+/* Base reading container */
+.bible-container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Single column - mobile portrait */
+@media (max-width: 768px) {
+  .bible-text {
+    column-count: 1;
+    padding: 1rem;
+  }
+}
+
+/* Two columns - tablet portrait / small desktop */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .bible-text {
+    column-count: 2;
+    column-gap: 3rem;
+    column-rule: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 2rem 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  
+  /* Prevent verses from breaking across columns */
+  .verse {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+/* Side-by-side pages - tablet landscape / large desktop */
+@media (min-width: 1201px) {
+  .reading-view {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 600px));
+    gap: 2rem;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .bible-page {
+    background: var(--page-bg, #FFFEF7);
+    padding: 3rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* Smooth scrolling */
+  .bible-page {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Physical Bible styling */
+.verse {
+  margin-bottom: 0.5rem;
+  line-height: 1.8;
+}
+
+.verse-number {
+  font-size: 0.75em;
+  vertical-align: super;
+  color: rgba(0, 0, 0, 0.5);
+  margin-right: 0.25rem;
+  user-select: none;
+}
+
+.verse-text {
+  font-family: Georgia, Baskerville, serif;
+  font-size: 18px;
+}
+
+/* Red letter text */
+.red-letter {
+  color: #c41e3a;
+  font-weight: 500;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .bible-page {
+    background: var(--page-bg-dark, #1a1a1a);
+    color: #e0e0e0;
+  }
+  
+  .red-letter {
+    color: #ff6b6b;
+  }
+  
+  .verse-number {
+    color: rgba(255, 255, 255, 0.5);
+  }
+  
+  @media (min-width: 769px) and (max-width: 1200px) {
+    .bible-text {
+      column-rule-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+/* Highlight styles */
+.highlight {
+  padding: 2px 0;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.highlight[data-color="#FFEB3B"] { background-color: rgba(255, 235, 59, 0.4); }
+.highlight[data-color="#A5D6A7"] { background-color: rgba(165, 214, 167, 0.4); }
+.highlight[data-color="#90CAF9"] { background-color: rgba(144, 202, 249, 0.4); }
+
+/* Highlight menu */
+.highlight-menu {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 1000;
+}
+
+.highlight-menu button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: transform 0.1s;
+}
+
+.highlight-menu button:hover {
+  transform: scale(1.05);
+}
+
+/* Text selection styling */
+::selection {
+  background-color: rgba(255, 235, 59, 0.3);
 }
 ```
 

@@ -17,22 +17,29 @@ Before starting development, read the documentation in this order:
 
 ### Step 1: Acquire Bible Data (Do This First!)
 
-**Option A: Quick Start (Free)**
+**Option A: Quick Start with Modern English (RECOMMENDED)**
 ```bash
-# Use public domain Bible for initial development
-# Download KJV SQLite database
+# Use World English Bible (WEB) - modern English, public domain
+# Download from eBible.org or GitHub
+# WEB has no "thee/thou" archaic language - perfect for development!
+
+# Example: Get WEB SQLite from a public source
+# Or use scrollmapper/bible_databases if WEB is available there
 git clone https://github.com/scrollmapper/bible_databases.git
-cp bible_databases/sqlite/kjv.db db/bibles/
+# Check for WEB or use KJV as fallback
 ```
 
-**Option B: License Amplified Bible (Recommended for Production)**
+**Option B: License Amplified Bible (For Production)**
 ```
 1. Email: permissions@lockman.org
 2. Subject: "Bible App License Request - Amplified Bible"
 3. Describe your project (see BIBLE_DATA_GUIDE.md for template)
 4. Budget: $500-$5,000/year
 5. Wait for response (typically 1-2 weeks)
+6. Architecture supports easy migration from WEB/KJV to Amplified
 ```
+
+**Note:** WEB (World English Bible) is recommended over KJV for development because it uses modern English without archaic language. Transitioning from WEB to Amplified Bible later is straightforward.
 
 ### Step 2: Set Up Rails 8 Application
 
@@ -65,7 +72,9 @@ rails generate model Verse chapter:references number:integer text:text red_lette
 
 # Generate models for user features
 rails generate model Bookmark user:references verse:references color:string
-rails generate model Note user:references verse:references private:boolean
+rails generate model Highlight user:references chapter:references start_verse:references end_verse:references start_offset:integer end_offset:integer selected_text:text color:string
+rails generate model Note user:references chapter:references private:boolean
+rails generate model NoteVerseReference note:references verse:references
 
 # Setup ActionText for rich notes
 rails action_text:install

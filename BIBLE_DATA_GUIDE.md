@@ -103,21 +103,55 @@ If Amplified Bible licensing is not feasible initially, consider these free alte
 - https://www.sacred-texts.com/bib/kjv/ (HTML format)
 - Zefania XML Bible format
 
-### 2. World English Bible (WEB)
+### 1b. New King James Version (NKJV) - Modern Alternative
+
+**Note:** NKJV is NOT public domain but is more accessible than KJV.
 
 **Pros:**
-- Modern English
-- Public domain
-- Close to ASV but updated
-- Actively maintained
+- **Modern English** - Updated language without "thee/thou"
+- Maintains KJV tradition and style
+- More readable for contemporary users
+- Footnotes show textual variants
 
 **Cons:**
-- Less well-known
-- Not as widely used as KJV or NIV
+- **Copyrighted by Thomas Nelson** - Requires licensing
+- Licensing fees similar to other modern translations
+- Cost: Typically $500-$2,000/year for digital use
+
+**Recommendation:** 
+- If you want modern English during development and can budget for it, NKJV is excellent
+- Otherwise, use WEB (World English Bible) which is public domain AND modern English
+- Then transition to Amplified Bible for production
+
+**Contact for NKJV License:**
+- Thomas Nelson Publishers
+- Email: permissions@thomasnelson.com
+
+### 2. World English Bible (WEB) - RECOMMENDED FOR DEVELOPMENT
+
+**Pros:**
+- **Modern English** - No archaic language!
+- **Public domain** - Completely free, no licensing
+- Close to ASV but updated for contemporary readers
+- Actively maintained
+- Good readability
+- **Best free option for modern English**
+
+**Cons:**
+- Less well-known than KJV
+- Not as widely used as NIV or ESV
+- Not the Amplified Bible
 
 **Source:**
 - https://ebible.org/web/ (Multiple formats: XML, SQL, etc.)
 - https://github.com/thiagobodruk/bible (JSON format)
+
+**Why WEB is Perfect for Development:**
+1. Free and legal
+2. Modern, readable English (unlike KJV)
+3. Similar structure to commercial translations
+4. Easy transition to Amplified Bible later
+5. Users can test features without archaic language confusion
 
 ### 3. American Standard Version (ASV)
 

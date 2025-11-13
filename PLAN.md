@@ -253,40 +253,69 @@ Similar pros/cons to YAML. Useful for:
 
 ## 3. Bookmark & Note-Taking Implementation
 
-### Bookmark Features
+### Highlighting & Bookmarking Features
+
+#### Design Philosophy: Character-Level Precision
+
+Users can highlight **any text selection**, not limited to whole verses:
+
+- **Character-level highlighting** - Highlight partial words, phrases, or multiple verses
+- **Flexible selection** - Not constrained by verse boundaries
+- **Color coding** - Different colors for different purposes
+- **Persistent selections** - Stored with character offsets
 
 #### Basic Requirements:
-- Single-click bookmark toggle
-- Visual indicator on bookmarked verses
-- List view of all bookmarks
+- Text selection highlighting (character-level precision)
+- Visual indicator on highlighted text
+- Quick bookmark toggle for whole verses
+- List view of all highlights/bookmarks
 - Sort by: date added, book order, custom
 - Filter by: book, testament, date range
 
 #### Advanced Features:
-- **Color coding:** Different colors for different purposes
+- **Color coding:** Different colors for different purposes (study, memorization, questions)
 - **Tags:** Custom tags for organization
-- **Collections:** Group bookmarks into reading lists
-- **Sharing:** Share bookmark collections with others
+- **Collections:** Group highlights into reading lists
+- **Sharing:** Share highlight collections with others
 - **Export:** Export to PDF, text, or markdown
+- **Notes on highlights:** Add notes to any highlight
 
-#### UI/UX with Hotwire:
+#### Implementation with Character Offsets:
 ```ruby
-# Turbo Frame for instant bookmark toggle
-<%= turbo_frame_tag "verse_#{verse.id}_bookmark" do %>
-  <%= render "bookmarks/toggle", verse: verse %>
-<% end %>
+# Highlight model - character-level precision
+class Highlight < ApplicationRecord
+  belongs_to :user
+  belongs_to :chapter  # Starting chapter
+  
+  # Store text selection with character offsets
+  # For multi-verse selections, store start and end positions
+  # Example: Genesis 1:1 char 5 to Genesis 1:3 char 42
+  
+  # start_verse_id, start_offset (character position in verse)
+  # end_verse_id, end_offset (character position in verse)
+  # color (hex code)
+  # selected_text (denormalized for quick display)
+end
 
-# Controller action
-def toggle
-  @bookmark = current_user.bookmarks.find_or_initialize_by(verse: @verse)
+# Simple bookmark model for quick verse bookmarks
+class Bookmark < ApplicationRecord
+  belongs_to :user
+  belongs_to :verse
+  validates :verse_id, uniqueness: { scope: :user_id }
+end
+
+# Controller action for creating highlights
+def create_highlight
+  @highlight = current_user.highlights.create!(
+    chapter: @chapter,
+    start_verse_id: params[:start_verse_id],
+    start_offset: params[:start_offset],
+    end_verse_id: params[:end_verse_id],
+    end_offset: params[:end_offset],
+    selected_text: params[:selected_text],
+    color: params[:color] || '#FFEB3B'
+  )
   
-  if @bookmark.persisted?
-    @bookmark.destroy
-  else
-    @bookmark.save
-  end
-  
-  # Turbo Stream updates the bookmark icon
   respond_to do |format|
     format.turbo_stream
   end
@@ -295,40 +324,66 @@ end
 
 ### Note-Taking Features
 
+#### Design Philosophy: Loose Coupling
+
+Notes are **loosely coupled** to the reading context, not hard-tied to specific verses:
+
+- **Start typing immediately** - Notes are associated with the current chapter/page view
+- **Optional verse tagging** - Users can explicitly tag verses within their notes using @references
+- **Context-aware** - System tracks where user was reading when note was created
+- **Flexible organization** - Not limited by verse boundaries
+
 #### Basic Requirements:
 - Rich text editor (ActionText)
-- Attach notes to any verse
+- **Associated with chapter/reading context** (not required to be verse-specific)
+- Optional verse references/tags within note content
 - Private by default
 - Edit/delete capabilities
 - Timestamp tracking
+- Auto-save drafts
 
 #### Advanced Features:
+- **Verse mentions:** Use @John3:16 syntax to reference verses within notes
 - **Markdown support:** For formatting
-- **Cross-references:** Link to other verses
+- **Cross-references:** Link to other verses or notes
 - **Search notes:** Full-text search across all notes
 - **Tags:** Categorize notes
 - **Sharing:** Optionally share notes publicly
 - **Attachments:** Images, PDFs (ActionText + ActiveStorage)
+- **Reading context tracking:** Remember chapter/page user was on
 
 #### Implementation with ActionText:
 ```ruby
-# Note model
+# Note model - loosely coupled to verses
 class Note < ApplicationRecord
   belongs_to :user
-  belongs_to :verse
+  belongs_to :chapter  # Associated with chapter, not verse
+  has_many :note_verse_references, dependent: :destroy
+  has_many :referenced_verses, through: :note_verse_references, source: :verse
   has_rich_text :content
   
   validates :content, presence: true
   
   scope :recent, -> { order(created_at: :desc) }
-  scope :for_verse, ->(verse) { where(verse: verse) }
+  scope :for_chapter, ->(chapter) { where(chapter: chapter) }
+  
+  # Extract verse references from note content (@John3:16)
+  after_save :extract_verse_references
+  
+  private
+  
+  def extract_verse_references
+    # Parse content for @references and create associations
+    # Example: "@John3:16" creates a reference to that verse
+  end
 end
 
-# View with Trix editor
-<%= form_with model: [@verse, @note], 
+# View with Trix editor - context-aware
+<%= form_with model: @note, 
               data: { turbo_frame: "note_form" } do |f| %>
+  <%= f.hidden_field :chapter_id, value: @current_chapter.id %>
   <%= f.rich_text_area :content, 
-                       placeholder: "Add your note..." %>
+                       placeholder: "Start typing your note... (Use @Book Chapter:Verse to reference specific verses)" %>
   <%= f.submit "Save Note" %>
 <% end %>
 ```
@@ -482,7 +537,12 @@ end
 class Verse < ApplicationRecord
   belongs_to :chapter
   has_many :bookmarks, dependent: :destroy
-  has_many :notes, dependent: :destroy
+  has_many :highlights_starting, class_name: 'Highlight', 
+           foreign_key: 'start_verse_id', dependent: :destroy
+  has_many :highlights_ending, class_name: 'Highlight',
+           foreign_key: 'end_verse_id', dependent: :destroy
+  has_many :note_verse_references, dependent: :destroy
+  has_many :notes, through: :note_verse_references
   has_many :users, through: :bookmarks
   
   validates :number, presence: true,
@@ -499,8 +559,9 @@ class Verse < ApplicationRecord
     user && bookmarks.exists?(user: user)
   end
   
-  def notes_by(user)
-    notes.where(user: user)
+  def highlighted_by?(user)
+    user && (highlights_starting.exists?(user: user) || 
+             highlights_ending.exists?(user: user))
   end
 end
 
@@ -518,16 +579,61 @@ class Bookmark < ApplicationRecord
   end
 end
 
+# app/models/highlight.rb
+class Highlight < ApplicationRecord
+  belongs_to :user
+  belongs_to :chapter
+  belongs_to :start_verse, class_name: 'Verse'
+  belongs_to :end_verse, class_name: 'Verse'
+  
+  validates :start_offset, :end_offset, presence: true,
+            numericality: { greater_than_or_equal_to: 0 }
+  validates :color, format: { with: /\A#[0-9A-F]{6}\z/i }
+  
+  scope :recent, -> { order(created_at: :desc) }
+  scope :by_color, ->(color) { where(color: color) }
+  scope :in_chapter, ->(chapter) { where(chapter: chapter) }
+  
+  def display_reference
+    if start_verse == end_verse
+      start_verse.reference
+    else
+      "#{start_verse.reference}-#{end_verse.number}"
+    end
+  end
+end
+
 # app/models/note.rb
 class Note < ApplicationRecord
   belongs_to :user
-  belongs_to :verse
+  belongs_to :chapter  # Loosely coupled to chapter, not verse
+  has_many :note_verse_references, dependent: :destroy
+  has_many :referenced_verses, through: :note_verse_references, source: :verse
   has_rich_text :content
   
   validates :content, presence: true
   
   scope :recent, -> { order(created_at: :desc) }
   scope :public_notes, -> { where(private: false) }
+  scope :for_chapter, ->(chapter) { where(chapter: chapter) }
+  
+  # Parse @verse references in content and create associations
+  after_save :extract_verse_references
+  
+  private
+  
+  def extract_verse_references
+    # Extract patterns like @John3:16 from content
+    # Create NoteVerseReference records for each
+  end
+end
+
+# app/models/note_verse_reference.rb
+class NoteVerseReference < ApplicationRecord
+  belongs_to :note
+  belongs_to :verse
+  
+  validates :verse_id, uniqueness: { scope: :note_id }
 end
 ```
 
@@ -575,13 +681,38 @@ end
 
 ## 6. UI/UX Considerations
 
-### Reading Experience
+### Reading Experience: Physical Bible on Screen
 
-1. **Clean, distraction-free interface**
-   - Centered text column
-   - Comfortable line height (1.6-1.8)
-   - Readable font size (16-18px base)
-   - Font: Georgia, serif for readability
+**Design Goal:** Replicate the experience of reading a physical Bible with modern digital enhancements.
+
+#### Layout Modes
+
+1. **Single Column (Mobile/Portrait)**
+   - Clean, centered text column
+   - Full-width on small screens
+   - Comfortable reading flow
+
+2. **Multi-Column (Desktop/Large Tablets)**
+   - **Two-column layout** like physical Bible pages
+   - Verses flow naturally across columns
+   - Gutter spacing between columns
+   - Page-like appearance
+
+3. **Side-by-Side Pages (Tablet Horizontal)**
+   - **Two full pages displayed simultaneously**
+   - Left page: Previous content or reference
+   - Right page: Current reading
+   - Synchronized scrolling option
+   - Perfect for cross-referencing
+
+#### Visual Design
+
+1. **Typography**
+   - Font: Georgia, Baskerville, or Crimson Text (book-like serif)
+   - Comfortable line height (1.7-1.9)
+   - Readable font size (17-19px base)
+   - Verse numbers: Small, subtle, non-intrusive
+   - Chapter headings: Elegant drop caps or headers
 
 2. **Red Letter Text Styling**
    ```css
@@ -598,25 +729,78 @@ end
    }
    ```
 
-3. **Navigation**
-   - Sticky header with book/chapter selector
-   - Previous/Next chapter buttons
-   - Quick jump dropdown
-   - Breadcrumb trail
+3. **Page Aesthetics**
+   - Paper-like background (#FFFEF7 or #F8F6F0)
+   - Subtle texture or grain (optional)
+   - Generous margins
+   - Page shadows for depth
+   - No distracting borders
 
-4. **Interaction**
-   - Click verse number to bookmark
-   - Hover shows note icon
-   - Click note icon to add/view notes
-   - Highlight on selection
+#### Responsive Layout Implementation
+
+```css
+/* Single column - mobile */
+@media (max-width: 768px) {
+  .bible-text {
+    columns: 1;
+    padding: 1rem;
+  }
+}
+
+/* Two columns - desktop/tablet portrait */
+@media (min-width: 769px) and (max-width: 1200px) {
+  .bible-text {
+    columns: 2;
+    column-gap: 3rem;
+    column-rule: 1px solid #e0e0e0;
+    padding: 2rem 3rem;
+  }
+}
+
+/* Side-by-side pages - tablet landscape/desktop */
+@media (min-width: 1201px) {
+  .reading-view {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+  
+  .bible-page {
+    background: #FFFEF7;
+    padding: 3rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    columns: 1;
+  }
+}
+```
+
+#### Navigation
+
+- Sticky header with book/chapter selector (non-intrusive)
+- Previous/Next chapter buttons
+- Quick jump dropdown
+- Page turner controls (for side-by-side mode)
+- Breadcrumb trail
+- Smooth transitions between pages
+
+#### Interaction
+
+- **Text selection for highlighting** - Select any text to highlight
+- **Click to create note** - Floating note icon appears on selection
+- **Quick bookmark** - Click verse number for simple bookmark
+- **Drag to select across verses** - Not limited by verse boundaries
+- **Double-tap** - Quick actions on mobile
+- **Highlight persistence** - Highlights visible on page like real highlighter marks
 
 ### Mobile Considerations
 
 - Touch-friendly tap targets (44x44px minimum)
-- Swipe between chapters
+- Swipe between chapters/pages
 - Pull-to-refresh
 - Bottom navigation for thumbs
+- Pinch to zoom text size
 - Offline reading capability
+- Fast, native-like transitions
 
 ---
 
