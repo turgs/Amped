@@ -92,13 +92,13 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
     t.index ["created_at"], name: "index_bookmarks_on_created_at"
   end
 
-  # Highlights - character-level text selections
+  # Highlights - completely flexible character-level text selections
+  # Can span ANY length: partial word, multiple verses, even multiple chapters
   create_table "highlights", force: :cascade do |t|
     t.integer "user_id", null: false
-    t.integer "chapter_id", null: false       # Primary chapter context
-    t.integer "start_verse_id", null: false   # Starting verse
+    t.integer "start_verse_id", null: false   # Starting verse (any verse in Bible)
     t.integer "start_offset", null: false     # Character offset in start verse
-    t.integer "end_verse_id", null: false     # Ending verse (can be same)
+    t.integer "end_verse_id", null: false     # Ending verse (can span chapters/books)
     t.integer "end_offset", null: false       # Character offset in end verse
     t.text "selected_text"                    # Denormalized for quick display
     t.string "color", default: "#FFEB3B"      # Highlight color
@@ -107,23 +107,25 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
     t.datetime "updated_at", null: false
     
     t.index ["user_id"], name: "index_highlights_on_user_id"
-    t.index ["chapter_id"], name: "index_highlights_on_chapter_id"
     t.index ["start_verse_id"], name: "index_highlights_on_start_verse"
+    t.index ["end_verse_id"], name: "index_highlights_on_end_verse"
     t.index ["created_at"], name: "index_highlights_on_created_at"
   end
 
-  # Notes - loosely coupled to chapters, not verses
+  # Notes - completely flexible, optional location context
+  # Not tied to chapters or verses - pure content with optional location tracking
   create_table "notes", force: :cascade do |t|
     t.integer "user_id", null: false
-    t.integer "chapter_id", null: false        # Associated with chapter context
+    t.integer "context_chapter_id"            # OPTIONAL - where user was when note created
+    t.integer "context_verse_id"              # OPTIONAL - specific verse context if relevant
     t.boolean "private", default: true
     t.string "tags", array: true
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     
-    t.index ["user_id", "chapter_id"], name: "index_notes_on_user_and_chapter"
     t.index ["user_id"], name: "index_notes_on_user_id"
-    t.index ["chapter_id"], name: "index_notes_on_chapter_id"
+    t.index ["context_chapter_id"], name: "index_notes_on_context_chapter"
+    t.index ["context_verse_id"], name: "index_notes_on_context_verse"
     t.index ["private"], name: "index_notes_on_private"
     t.index ["created_at"], name: "index_notes_on_created_at"
   end
@@ -254,8 +256,12 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
   add_foreign_key "verses", "chapters"
   add_foreign_key "bookmarks", "users"
   add_foreign_key "bookmarks", "verses"
+  add_foreign_key "highlights", "users"
+  add_foreign_key "highlights", "verses", column: "start_verse_id"
+  add_foreign_key "highlights", "verses", column: "end_verse_id"
   add_foreign_key "notes", "users"
-  add_foreign_key "notes", "verses"
+  add_foreign_key "note_verse_references", "notes"
+  add_foreign_key "note_verse_references", "verses"
   add_foreign_key "collections", "users"
   add_foreign_key "collection_bookmarks", "collections"
   add_foreign_key "collection_bookmarks", "bookmarks"
@@ -266,6 +272,116 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
 end
+```
+
+### Practical Highlight Examples
+
+The highlight system supports any selection length. Here are real-world examples:
+
+```ruby
+# Example 1: Partial word highlight
+# User selects just "od" from the word "God" in Genesis 1:1
+Highlight.create!(
+  user: current_user,
+  start_verse_id: 1,      # Genesis 1:1
+  start_offset: 20,       # Character position of 'o'
+  end_verse_id: 1,        # Same verse
+  end_offset: 22,         # Character position after 'd'
+  selected_text: "od",
+  color: "#FFEB3B"
+)
+
+# Example 2: Multiple verses in same chapter
+# User highlights Genesis 1:1-5 (all 5 verses)
+Highlight.create!(
+  user: current_user,
+  start_verse_id: 1,      # Genesis 1:1
+  start_offset: 0,        # Start of verse 1
+  end_verse_id: 5,        # Genesis 1:5
+  end_offset: 82,         # End of verse 5
+  selected_text: "In the beginning God created...[full text]...and there was evening",
+  color: "#90CAF9"
+)
+
+# Example 3: Cross-chapter highlight
+# User highlights Genesis 1:26 through Genesis 2:3
+Highlight.create!(
+  user: current_user,
+  start_verse_id: 26,     # Genesis 1:26
+  start_offset: 0,
+  end_verse_id: 34,       # Genesis 2:3 (assuming sequential IDs)
+  end_offset: 95,
+  selected_text: "Then God said, 'Let us make...[continues]...blessed the seventh day",
+  color: "#A5D6A7"
+)
+
+# Example 4: Cross-book highlight (Old Testament to New Testament)
+# User highlights Malachi 4:5-6 through Matthew 1:1
+Highlight.create!(
+  user: current_user,
+  start_verse_id: 23143,  # Malachi 4:5
+  start_offset: 0,
+  end_verse_id: 23145,    # Matthew 1:1
+  end_offset: 48,
+  selected_text: "See, I will send the prophet...[gap]...The book of the genealogy",
+  color: "#FFEB3B"
+)
+
+# Querying highlights
+# Find all highlights spanning a specific verse
+verse = Verse.find(15)
+highlights = Highlight.where(
+  '(start_verse_id <= ? AND end_verse_id >= ?)',
+  verse.id, verse.id
+)
+
+# Find cross-chapter highlights
+cross_chapter = Highlight.joins(:start_verse, :end_verse)
+  .where('verses.chapter_id != end_verses_highlights.chapter_id')
+```
+
+### Practical Note Examples
+
+Notes are completely flexible with optional context:
+
+```ruby
+# Example 1: Note with no context (standalone thought)
+Note.create!(
+  user: current_user,
+  context_chapter_id: nil,   # No context
+  context_verse_id: nil,      # No context
+  content: "Key themes I'm noticing: grace, mercy, redemption",
+  private: true
+)
+
+# Example 2: Note with chapter context
+# User was reading Matthew 5 and started typing
+Note.create!(
+  user: current_user,
+  context_chapter_id: 929,    # Matthew 5
+  context_verse_id: nil,      # No specific verse
+  content: "The Sermon on the Mount is revolutionary...",
+  private: true
+)
+
+# Example 3: Note with verse context
+# User clicked on John 3:16 then started typing
+Note.create!(
+  user: current_user,
+  context_chapter_id: 1100,   # John 3
+  context_verse_id: 26087,    # John 3:16
+  content: "This verse changed my life. @Romans5:8 is similar.",
+  private: true
+)
+# After save, @Romans5:8 becomes a NoteVerseReference
+
+# Example 4: User removes context later
+note = Note.find(123)
+note.update(
+  context_chapter_id: nil,
+  context_verse_id: nil
+)
+# Note is now context-free but still has @verse references in content
 ```
 
 ### SQLite FTS5 Setup

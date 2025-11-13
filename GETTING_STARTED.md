@@ -72,9 +72,12 @@ rails generate model Verse chapter:references number:integer text:text red_lette
 
 # Generate models for user features
 rails generate model Bookmark user:references verse:references color:string
-rails generate model Highlight user:references chapter:references start_verse:references end_verse:references start_offset:integer end_offset:integer selected_text:text color:string
-rails generate model Note user:references chapter:references private:boolean
+rails generate model Highlight user:references start_verse:references end_verse:references start_offset:integer end_offset:integer selected_text:text color:string
+rails generate model Note user:references context_chapter:references context_verse:references private:boolean
 rails generate model NoteVerseReference note:references verse:references
+
+# Note: Highlight has NO chapter constraint - can span any distance
+# Note: Note context fields are OPTIONAL - notes are standalone content
 
 # Setup ActionText for rich notes
 rails action_text:install

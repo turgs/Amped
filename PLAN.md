@@ -255,14 +255,26 @@ Similar pros/cons to YAML. Useful for:
 
 ### Highlighting & Bookmarking Features
 
-#### Design Philosophy: Character-Level Precision
+#### Design Philosophy: Maximum Selection Flexibility
 
-Users can highlight **any text selection**, not limited to whole verses:
+Users can highlight **absolutely any text selection** with zero constraints:
 
-- **Character-level highlighting** - Highlight partial words, phrases, or multiple verses
-- **Flexible selection** - Not constrained by verse boundaries
+- **Character-level precision** - Start or end on any character, even partial words
+- **Unlimited span** - Select across any distance:
+  - Partial word: "G" from "God"
+  - Single verse: John 3:16
+  - Multiple verses: John 3:16-21
+  - Multiple chapters: Genesis 1:1 - Genesis 5:32
+  - Multiple books: Malachi 4:6 - Matthew 1:1 (Old to New Testament!)
+- **No boundaries** - System doesn't care about verse, chapter, or book divisions
 - **Color coding** - Different colors for different purposes
 - **Persistent selections** - Stored with character offsets
+
+#### Technical Approach:
+- Store only: `start_verse_id`, `start_offset`, `end_verse_id`, `end_offset`
+- No chapter_id constraint - completely free-form
+- Denormalized `selected_text` for quick display without reconstruction
+- UI can highlight across any number of pages/screens
 
 #### Basic Requirements:
 - Text selection highlighting (character-level precision)
@@ -271,6 +283,7 @@ Users can highlight **any text selection**, not limited to whole verses:
 - List view of all highlights/bookmarks
 - Sort by: date added, book order, custom
 - Filter by: book, testament, date range
+- Handle edge cases: cross-chapter, cross-book selections
 
 #### Advanced Features:
 - **Color coding:** Different colors for different purposes (study, memorization, questions)
@@ -282,19 +295,40 @@ Users can highlight **any text selection**, not limited to whole verses:
 
 #### Implementation with Character Offsets:
 ```ruby
-# Highlight model - character-level precision
+# Highlight model - completely flexible character-level precision
 class Highlight < ApplicationRecord
   belongs_to :user
-  belongs_to :chapter  # Starting chapter
+  belongs_to :start_verse, class_name: 'Verse'
+  belongs_to :end_verse, class_name: 'Verse'
   
   # Store text selection with character offsets
-  # For multi-verse selections, store start and end positions
-  # Example: Genesis 1:1 char 5 to Genesis 1:3 char 42
+  # NO chapter constraint - can span ANY distance
+  # Examples:
+  #   - Partial word: "God" -> "od" (same verse, partial)
+  #   - Multiple verses: Genesis 1:1-5 (within same chapter)
+  #   - Multiple chapters: Genesis 1:1 to Genesis 3:24 (across chapters)
+  #   - Even multiple books: Genesis 50:26 to Exodus 1:5 (across books!)
   
-  # start_verse_id, start_offset (character position in verse)
-  # end_verse_id, end_offset (character position in verse)
-  # color (hex code)
-  # selected_text (denormalized for quick display)
+  validates :start_offset, :end_offset, 
+            numericality: { greater_than_or_equal_to: 0 }
+  
+  def display_reference
+    start_ref = "#{start_verse.book.name} #{start_verse.chapter.number}:#{start_verse.number}"
+    end_ref = "#{end_verse.book.name} #{end_verse.chapter.number}:#{end_verse.number}"
+    
+    if start_verse == end_verse
+      start_ref  # Same verse
+    elsif start_verse.chapter == end_verse.chapter
+      "#{start_ref}-#{end_verse.number}"  # Same chapter
+    else
+      "#{start_ref} - #{end_ref}"  # Cross-chapter or cross-book
+    end
+  end
+  
+  def span_length
+    # Calculate how many verses this highlight spans
+    (start_verse.id..end_verse.id).count
+  end
 end
 
 # Simple bookmark model for quick verse bookmarks
@@ -307,7 +341,6 @@ end
 # Controller action for creating highlights
 def create_highlight
   @highlight = current_user.highlights.create!(
-    chapter: @chapter,
     start_verse_id: params[:start_verse_id],
     start_offset: params[:start_offset],
     end_verse_id: params[:end_verse_id],
@@ -324,18 +357,20 @@ end
 
 ### Note-Taking Features
 
-#### Design Philosophy: Loose Coupling
+#### Design Philosophy: Maximum Flexibility
 
-Notes are **loosely coupled** to the reading context, not hard-tied to specific verses:
+Notes are **completely flexible** with optional context tracking:
 
-- **Start typing immediately** - Notes are associated with the current chapter/page view
+- **Start typing immediately** - No required associations, pure content
+- **Optional location tracking** - System can track where user was when note created (but not required)
 - **Optional verse tagging** - Users can explicitly tag verses within their notes using @references
-- **Context-aware** - System tracks where user was reading when note was created
-- **Flexible organization** - Not limited by verse boundaries
+- **Context suggestions** - UI can suggest context based on current view, but user not locked in
+- **Complete freedom** - Notes are standalone content, associations are hints not constraints
 
 #### Basic Requirements:
 - Rich text editor (ActionText)
-- **Associated with chapter/reading context** (not required to be verse-specific)
+- **NO required associations** - notes are standalone
+- Optional context tracking (chapter/verse where created)
 - Optional verse references/tags within note content
 - Private by default
 - Edit/delete capabilities
@@ -350,14 +385,16 @@ Notes are **loosely coupled** to the reading context, not hard-tied to specific 
 - **Tags:** Categorize notes
 - **Sharing:** Optionally share notes publicly
 - **Attachments:** Images, PDFs (ActionText + ActiveStorage)
-- **Reading context tracking:** Remember chapter/page user was on
+- **Smart context suggestions:** UI suggests location based on current view
+- **Retroactive context:** User can add/change context after creation
 
 #### Implementation with ActionText:
 ```ruby
-# Note model - loosely coupled to verses
+# Note model - completely flexible, optional context
 class Note < ApplicationRecord
   belongs_to :user
-  belongs_to :chapter  # Associated with chapter, not verse
+  belongs_to :context_chapter, class_name: 'Chapter', optional: true
+  belongs_to :context_verse, class_name: 'Verse', optional: true
   has_many :note_verse_references, dependent: :destroy
   has_many :referenced_verses, through: :note_verse_references, source: :verse
   has_rich_text :content
@@ -365,10 +402,22 @@ class Note < ApplicationRecord
   validates :content, presence: true
   
   scope :recent, -> { order(created_at: :desc) }
-  scope :for_chapter, ->(chapter) { where(chapter: chapter) }
+  scope :with_context, -> { where.not(context_chapter_id: nil) }
+  scope :without_context, -> { where(context_chapter_id: nil) }
+  scope :for_chapter, ->(chapter) { where(context_chapter: chapter) }
   
   # Extract verse references from note content (@John3:16)
   after_save :extract_verse_references
+  
+  def location_summary
+    if context_verse
+      context_verse.reference
+    elsif context_chapter
+      context_chapter.reference
+    else
+      "No location context"
+    end
+  end
   
   private
   
@@ -378,12 +427,23 @@ class Note < ApplicationRecord
   end
 end
 
-# View with Trix editor - context-aware
+# View with Trix editor - flexible context
 <%= form_with model: @note, 
               data: { turbo_frame: "note_form" } do |f| %>
-  <%= f.hidden_field :chapter_id, value: @current_chapter.id %>
+  <!-- Context is OPTIONAL and can be changed/removed -->
+  <%= f.hidden_field :context_chapter_id, value: @current_chapter&.id %>
+  <%= f.hidden_field :context_verse_id, value: nil %>
+  
   <%= f.rich_text_area :content, 
                        placeholder: "Start typing your note... (Use @Book Chapter:Verse to reference specific verses)" %>
+  
+  <div class="context-hint">
+    <% if @current_chapter %>
+      Currently viewing: <%= @current_chapter.reference %>
+      <button type="button" onclick="clearContext()">Clear location</button>
+    <% end %>
+  </div>
+  
   <%= f.submit "Save Note" %>
 <% end %>
 ```
@@ -582,7 +642,6 @@ end
 # app/models/highlight.rb
 class Highlight < ApplicationRecord
   belongs_to :user
-  belongs_to :chapter
   belongs_to :start_verse, class_name: 'Verse'
   belongs_to :end_verse, class_name: 'Verse'
   
@@ -592,21 +651,49 @@ class Highlight < ApplicationRecord
   
   scope :recent, -> { order(created_at: :desc) }
   scope :by_color, ->(color) { where(color: color) }
-  scope :in_chapter, ->(chapter) { where(chapter: chapter) }
+  scope :spanning_verse, ->(verse) do
+    where('start_verse_id <= ? AND end_verse_id >= ?', verse.id, verse.id)
+  end
+  scope :in_chapter, ->(chapter) do
+    verse_ids = chapter.verses.pluck(:id)
+    where('start_verse_id IN (?) OR end_verse_id IN (?)', verse_ids, verse_ids)
+  end
   
   def display_reference
+    start_ref = start_verse.reference
+    end_ref = end_verse.reference
+    
     if start_verse == end_verse
-      start_verse.reference
+      start_ref  # Same verse
+    elsif start_verse.chapter == end_verse.chapter
+      # Same chapter: "Genesis 1:1-5"
+      "#{start_verse.book.name} #{start_verse.chapter.number}:#{start_verse.number}-#{end_verse.number}"
     else
-      "#{start_verse.reference}-#{end_verse.number}"
+      # Cross-chapter or cross-book: "Genesis 1:1 - Genesis 3:24"
+      "#{start_ref} - #{end_ref}"
     end
+  end
+  
+  def spans_chapters?
+    start_verse.chapter_id != end_verse.chapter_id
+  end
+  
+  def spans_books?
+    start_verse.book != end_verse.book
+  end
+  
+  def verse_count
+    # Approximate count (assumes sequential verse IDs)
+    end_verse.id - start_verse.id + 1
   end
 end
 
 # app/models/note.rb
 class Note < ApplicationRecord
   belongs_to :user
-  belongs_to :chapter  # Loosely coupled to chapter, not verse
+  # Optional context - where user was when note created
+  belongs_to :context_chapter, class_name: 'Chapter', optional: true
+  belongs_to :context_verse, class_name: 'Verse', optional: true
   has_many :note_verse_references, dependent: :destroy
   has_many :referenced_verses, through: :note_verse_references, source: :verse
   has_rich_text :content
@@ -615,10 +702,22 @@ class Note < ApplicationRecord
   
   scope :recent, -> { order(created_at: :desc) }
   scope :public_notes, -> { where(private: false) }
-  scope :for_chapter, ->(chapter) { where(chapter: chapter) }
+  scope :with_context, -> { where.not(context_chapter_id: nil) }
+  scope :without_context, -> { where(context_chapter_id: nil) }
+  scope :for_chapter, ->(chapter) { where(context_chapter: chapter) }
   
   # Parse @verse references in content and create associations
   after_save :extract_verse_references
+  
+  def location_summary
+    if context_verse
+      context_verse.reference
+    elsif context_chapter
+      context_chapter.reference
+    else
+      "No location"
+    end
+  end
   
   private
   
