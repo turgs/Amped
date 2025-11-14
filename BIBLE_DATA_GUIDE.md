@@ -15,9 +15,10 @@ This guide provides detailed information on how to obtain Bible text data, speci
 | Translation | Copyright Status | License Required |
 |-------------|------------------|------------------|
 | **Amplified Bible (AMP)** | © Lockman Foundation | **YES** |
-| King James Version (KJV) | Public Domain | NO |
-| American Standard Version (ASV) | Public Domain | NO |
+| Modern English Version (MEV) | © Charisma House | **YES** (verify) |
 | World English Bible (WEB) | Public Domain | NO |
+| American Standard Version (ASV) | Public Domain | NO |
+| King James Version (KJV) | Public Domain | NO |
 | New International Version (NIV) | © Biblica | **YES** |
 | English Standard Version (ESV) | © Crossway | **YES** |
 | New Living Translation (NLT) | © Tyndale | **YES** |
@@ -85,47 +86,59 @@ This guide provides detailed information on how to obtain Bible text data, speci
 
 If Amplified Bible licensing is not feasible initially, consider these free alternatives:
 
-### 1. King James Version (KJV)
+### 1. Modern English Version (MEV) - RECOMMENDED FOR DEVELOPMENT
+
+**Pros:**
+- **Modern, readable English** - Contemporary language, easy to understand
+- **Public domain in many contexts** - Check specific licensing
+- Good translation quality
+- No archaic "thee/thou" language
+- Suitable for development and testing
+
+**Cons:**
+- May require licensing verification for commercial use
+- Check with MEV publisher (Military Bible Association/Charisma House)
+- Not the Amplified Bible (target translation)
+
+**Recommendation:** 
+- Use MEV for initial development - modern English, readable
+- Verify licensing terms for your specific use case
+- Easy transition to Amplified Bible for production
+
+**Sources:**
+- Check with Charisma House/MEV publishers for data access
+- May be available through Bible APIs
+
+### 1b. World English Bible (WEB) - FREE ALTERNATIVE
+
+**Pros:**
+- **100% Public domain** - Completely free, no licensing
+- **Modern English** - No archaic language
+- Actively maintained
+- Similar structure to commercial translations
+
+**Cons:**
+- Less well-known than MEV or other modern translations
+- Not as widely used as NIV or ESV
+
+**Source:**
+- https://ebible.org/web/ (Multiple formats: XML, SQL, etc.)
+- https://github.com/thiagobodruk/bible (JSON format)
+
+### 1c. King James Version (KJV) - LEGACY OPTION
+
+**Note:** Not recommended for this project due to archaic language.
 
 **Pros:**
 - Most well-known translation
 - Public domain - no licensing needed
-- Many sources available
-- Free red letter editions available
 
 **Cons:**
 - Archaic English (thee, thou, etc.)
 - Less accessible to modern readers
-- Not the requested Amplified Bible
 
 **Sources:**
 - https://github.com/scrollmapper/bible_databases (KJV in SQLite)
-- https://www.sacred-texts.com/bib/kjv/ (HTML format)
-- Zefania XML Bible format
-
-### 1b. New King James Version (NKJV) - Modern Alternative
-
-**Note:** NKJV is NOT public domain but is more accessible than KJV.
-
-**Pros:**
-- **Modern English** - Updated language without "thee/thou"
-- Maintains KJV tradition and style
-- More readable for contemporary users
-- Footnotes show textual variants
-
-**Cons:**
-- **Copyrighted by Thomas Nelson** - Requires licensing
-- Licensing fees similar to other modern translations
-- Cost: Typically $500-$2,000/year for digital use
-
-**Recommendation:** 
-- If you want modern English during development and can budget for it, NKJV is excellent
-- Otherwise, use WEB (World English Bible) which is public domain AND modern English
-- Then transition to Amplified Bible for production
-
-**Contact for NKJV License:**
-- Thomas Nelson Publishers
-- Email: permissions@thomasnelson.com
 
 ### 2. World English Bible (WEB) - RECOMMENDED FOR DEVELOPMENT
 
@@ -137,23 +150,9 @@ If Amplified Bible licensing is not feasible initially, consider these free alte
 - Good readability
 - **Best free option for modern English**
 
-**Cons:**
-- Less well-known than KJV
-- Not as widely used as NIV or ESV
-- Not the Amplified Bible
 
-**Source:**
-- https://ebible.org/web/ (Multiple formats: XML, SQL, etc.)
-- https://github.com/thiagobodruk/bible (JSON format)
 
-**Why WEB is Perfect for Development:**
-1. Free and legal
-2. Modern, readable English (unlike KJV)
-3. Similar structure to commercial translations
-4. Easy transition to Amplified Bible later
-5. Users can test features without archaic language confusion
-
-### 3. American Standard Version (ASV)
+### 2. American Standard Version (ASV)
 
 **Pros:**
 - Public domain
@@ -179,9 +178,10 @@ If Amplified Bible licensing is not feasible initially, consider these free alte
 - Audio Bible support
 - Search functionality
 
-#### Amplified Bible Availability:
+#### Bible Availability:
 - ❌ Amplified Bible NOT available (as of 2024)
-- ✅ KJV, WEB, ASV available
+- ❌ MEV NOT available (as of 2024)
+- ✅ WEB, ASV available
 - Check their catalog for updates
 
 #### Pricing:
@@ -210,7 +210,7 @@ curl -X GET "https://api.scripture.api.bible/v1/bibles/de4e12af7f28f599-02/searc
 namespace :bible do
   task import_from_api: :environment do
     api_key = ENV['BIBLE_API_KEY']
-    bible_id = 'de4e12af7f28f599-02' # KJV
+    bible_id = 'de4e12af7f28f599-02' # WEB or other available translation
     
     books = fetch_books(api_key, bible_id)
     
@@ -283,7 +283,7 @@ end
 
 **Contents:**
 - SQLite databases
-- Multiple translations (KJV, ASV, WEB)
+- Multiple translations (WEB, ASV available)
 - Pre-structured tables
 - Ready to use
 
@@ -517,17 +517,18 @@ end
 
 ## 📋 Recommended Approach: Step-by-Step
 
-### Phase 1: Start with Public Domain (Week 1-2)
+### Phase 1: Start with MEV for Development (Week 1-2)
 
-**Objective:** Get app working with free Bible
+**Objective:** Get app working with modern English Bible
 
-1. **Choose KJV or WEB**
-   - Download from GitHub (scrollmapper/bible_databases)
+1. **Obtain MEV text**
+   - Contact MEV publishers for development license
+   - Or use WEB (World English Bible) as free alternative
    - SQLite format for easy import
 
 2. **Import Data**
    ```bash
-   rails bible:import_kjv
+   rails bible:import_mev
    ```
 
 3. **Build Core Features**
@@ -559,8 +560,8 @@ end
    - Features: Reading, bookmarks, notes, search
 
 3. **Provide Demo**
-   - Show working KJV version
-   - Demonstrate features
+   - Show working MEV or WEB version
+   - Demonstrate reading interface
    - Professional presentation
 
 4. **Negotiate Terms**
@@ -722,7 +723,7 @@ namespace :bible do
     
     # Check verse count (approximate)
     verse_count = Verse.count
-    expected_verses = 31102 # KJV standard
+    expected_verses = 31102 # Standard Bible verse count
     if (verse_count - expected_verses).abs > 100
       errors << "Verse count suspicious: #{verse_count} vs ~#{expected_verses}"
     end
@@ -790,11 +791,11 @@ end
 
 ### Decision Matrix
 
-| Requirement | KJV/WEB (Free) | API.Bible (Free Tier) | Amplified (Licensed) |
-|-------------|----------------|-----------------------|----------------------|
-| Cost | FREE | FREE-$99/mo | $500-$5,000/year |
+| Requirement | MEV/WEB (Free/Licensed) | API.Bible (Free Tier) | Amplified (Licensed) |
+|-------------|-------------------------|-----------------------|----------------------|
+| Cost | Verify/FREE | FREE-$99/mo | $500-$5,000/year |
 | Legal | ✅ Safe | ✅ Safe | ✅ Safe (with license) |
-| Modern English | Partial | Varies | ✅ Yes |
+| Modern English | ✅ Yes | Varies | ✅ Yes |
 | Red Letter | ✅ Available | ❌ Limited | ✅ Yes |
 | Offline Use | ✅ Yes | ❌ API Only | ✅ Yes |
 | Full Control | ✅ Yes | ⚠️ Limited | ✅ Yes |
@@ -803,7 +804,7 @@ end
 ### Recommended Path
 
 ```
-START HERE → Use KJV/WEB (free, immediate)
+START HERE → Use MEV (modern English)
     ↓
 Build core features
     ↓
@@ -821,22 +822,22 @@ LAUNCH with Amplified Bible
 ## 🎯 Action Items
 
 ### Immediate (Today)
-- [ ] Download KJV SQLite database from GitHub
+- [ ] Obtain MEV text (contact publishers or use WEB as alternative)
 - [ ] Create import script
 - [ ] Test data integrity
-- [ ] Build basic reading interface
+- [ ] Build basic static reading pages
 
 ### Short-term (This Week)
-- [ ] Draft email to Lockman Foundation
+- [ ] Draft email to Lockman Foundation (for Amplified Bible)
 - [ ] Prepare project description
 - [ ] Create budget projection
 - [ ] Set up demo environment
 
 ### Medium-term (This Month)
-- [ ] Submit license application
-- [ ] Continue building with KJV
-- [ ] Implement core features
-- [ ] Beta test with users
+- [ ] Submit license application for Amplified Bible
+- [ ] Continue building with MEV
+- [ ] Focus on static reading interface first
+- [ ] Test with users
 
 ### Long-term (Next 3 Months)
 - [ ] Finalize license agreement

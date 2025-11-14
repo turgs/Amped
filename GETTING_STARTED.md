@@ -17,16 +17,14 @@ Before starting development, read the documentation in this order:
 
 ### Step 1: Acquire Bible Data (Do This First!)
 
-**Option A: Quick Start with Modern English (RECOMMENDED)**
+**Option A: MEV for Development (RECOMMENDED)**
 ```bash
-# Use World English Bible (WEB) - modern English, public domain
-# Download from eBible.org or GitHub
-# WEB has no "thee/thou" archaic language - perfect for development!
+# Modern English Version (MEV) - modern, readable English
+# Contact MEV publishers (Charisma House) for development access
+# Or use WEB (World English Bible) as free public domain alternative
 
-# Example: Get WEB SQLite from a public source
-# Or use scrollmapper/bible_databases if WEB is available there
-git clone https://github.com/scrollmapper/bible_databases.git
-# Check for WEB or use KJV as fallback
+# Example: Get WEB from eBible.org
+# Download WEB in SQLite format for easy import
 ```
 
 **Option B: License Amplified Bible (For Production)**
@@ -36,10 +34,10 @@ git clone https://github.com/scrollmapper/bible_databases.git
 3. Describe your project (see BIBLE_DATA_GUIDE.md for template)
 4. Budget: $500-$5,000/year
 5. Wait for response (typically 1-2 weeks)
-6. Architecture supports easy migration from WEB/KJV to Amplified
+6. Architecture supports easy migration from MEV to Amplified
 ```
 
-**Note:** WEB (World English Bible) is recommended over KJV for development because it uses modern English without archaic language. Transitioning from WEB to Amplified Bible later is straightforward.
+**Note:** MEV provides modern, readable English for development. WEB is a free public domain alternative. Both transition easily to Amplified Bible for production.
 
 ### Step 2: Set Up Rails 8 Application
 
@@ -62,28 +60,19 @@ rails generate devise:install
 rails generate devise User
 ```
 
-### Step 3: Create Database Schema
+### Step 3: Create Database Schema (Bible Content Only - Phase 1)
 
 ```bash
-# Generate models for Bible content
+# Generate models for Bible content (start simple)
 rails generate model Book name:string abbreviation:string testament:integer position:integer
 rails generate model Chapter book:references number:integer
 rails generate model Verse chapter:references number:integer text:text red_letter:boolean
 
-# Generate models for user features
-rails generate model Bookmark user:references verse:references color:string
-rails generate model Highlight user:references start_verse:references end_verse:references start_offset:integer end_offset:integer selected_text:text color:string
-rails generate model Note user:references context_chapter:references context_verse:references private:boolean
-rails generate model NoteVerseReference note:references verse:references
-
-# Note: Highlight has NO chapter constraint - can span any distance
-# Note: Note context fields are OPTIONAL - notes are standalone content
-
-# Setup ActionText for rich notes
-rails action_text:install
-
 # Run migrations
 rails db:migrate
+
+# Note: User features (bookmarks, highlights, notes) will be added later
+# Focus on static reading pages first
 ```
 
 ### Step 4: Import Bible Data
@@ -95,20 +84,25 @@ Create import rake task (see TECHNICAL_SPEC.md for complete code):
 touch lib/tasks/bible.rake
 
 # Run import (once you have Bible data)
-rails bible:import_kjv  # or import_amplified
-rails bible:setup_fts   # Setup full-text search
+rails bible:import_mev  # or import_web if using WEB
+rails bible:setup_fts   # Setup full-text search (optional for phase 1)
 ```
 
-### Step 5: Build Basic Reading Interface
+### Step 5: Build Static Reading Pages
 
 ```bash
-# Generate controllers
+# Generate controllers for reading only (no user features yet)
 rails generate controller Books index show
 rails generate controller Chapters show
-rails generate controller Bookmarks index create destroy
-rails generate controller Notes index show new create edit update destroy
 
-# Setup routes (see TECHNICAL_SPEC.md for complete routes)
+# Setup basic routes for reading
+# config/routes.rb
+resources :books, only: [:index, :show] do
+  resources :chapters, only: [:show]
+end
+
+# Note: Bookmarks, notes, highlights will be added in later phases
+# Focus on clean, simple reading experience first
 ```
 
 ## 📋 Development Checklist
@@ -116,53 +110,55 @@ rails generate controller Notes index show new create edit update destroy
 ### Week 1-2: Foundation
 - [ ] Create Rails 8 app with correct options
 - [ ] Setup Hotwire, Propshaft, Importmaps
-- [ ] Configure Devise authentication
-- [ ] Create database schema and run migrations
+- [ ] Create database schema for Bible content only (no user features yet)
+- [ ] Run migrations
 - [ ] Setup Git repository and version control
 - [ ] Configure deployment (Fly.io or similar)
 
 ### Week 3-4: Bible Text
-- [ ] Obtain Bible text (KJV for now)
+- [ ] Obtain MEV text (or WEB as alternative)
 - [ ] Create import scripts
 - [ ] Import Bible data to database
-- [ ] Setup SQLite FTS5 for search
 - [ ] Validate data integrity (31,102 verses)
 - [ ] Create seed data
 
-### Week 5-6: Reading Interface
-- [ ] Build book listing page
-- [ ] Create chapter reading page
-- [ ] Implement verse display
+### Week 5-6: Static Reading Interface (Phase 1 - No User Features)
+- [ ] Build book listing page (simple, static)
+- [ ] Create chapter reading page (static, no bookmarks/notes)
+- [ ] Implement verse display with proper formatting
 - [ ] Add red letter text styling
 - [ ] Create navigation (prev/next chapter)
-- [ ] Make responsive design
+- [ ] Make responsive design (multi-column layout)
 - [ ] Add dark mode support
+- [ ] Test reading experience across devices
 
-### Week 7-8: User Features
-- [ ] Implement bookmark toggle (Turbo Streams)
-- [ ] Create bookmarks index page
-- [ ] Build note creation form (ActionText)
-- [ ] Create notes management interface
-- [ ] Add user dashboard
-- [ ] Implement user profiles
+### Week 7-8: Polish & Refinement (Still Static)
+- [ ] Optimize page load performance
+- [ ] Refine typography and layout
+- [ ] Test multi-column and side-by-side layouts
+- [ ] Improve mobile reading experience
+- [ ] Add keyboard shortcuts for navigation
+- [ ] User testing and feedback
 
-### Week 9-10: Search & Polish
-- [ ] Implement full-text search
-- [ ] Add search results page
+### Week 9-10: Optional Enhancements (Still Static)
+- [ ] Implement basic search (optional)
 - [ ] Setup caching strategy
 - [ ] Performance optimization
 - [ ] Add loading states
 - [ ] Error handling
+- [ ] Cross-referencing between passages
 
-### Week 11-12: Testing & Launch
-- [ ] Write RSpec tests
-- [ ] Security audit
+### Week 11-12: Testing & Launch (Phase 1 - Static Reading)
+- [ ] Write basic tests
 - [ ] Performance testing
-- [ ] Beta user testing
+- [ ] Beta user testing (reading experience only)
 - [ ] Bug fixes
 - [ ] Documentation
 - [ ] Deploy to production
 - [ ] Soft launch
+
+**Note:** User features (authentication, bookmarks, notes, highlights) will be Phase 2
+**Focus:** Build excellent static reading experience first
 
 ## 🛠 Essential Commands
 
@@ -199,8 +195,8 @@ rails db:rollback
 rails db:reset
 
 # Import Bible data
-rails bible:import_kjv
-rails bible:setup_fts
+rails bible:import_mev  # or import_web
+rails bible:setup_fts   # optional for phase 1
 
 # Validate data
 rails bible:validate
@@ -251,36 +247,8 @@ end
 </div>
 ```
 
-### Quick Reference: Toggle Bookmark
-
-```ruby
-# Controller
-class BookmarksController < ApplicationController
-  def toggle
-    @verse = Verse.find(params[:verse_id])
-    @bookmark = current_user.bookmarks.find_or_initialize_by(verse: @verse)
-    
-    if @bookmark.persisted?
-      @bookmark.destroy
-      @bookmarked = false
-    else
-      @bookmark.save
-      @bookmarked = true
-    end
-    
-    respond_to do |format|
-      format.turbo_stream
-    end
-  end
-end
-
-# Turbo Stream View (app/views/bookmarks/toggle.turbo_stream.erb)
-<turbo-stream action="replace" target="verse_<%= @verse.id %>_bookmark">
-  <template>
-    <%= render "bookmarks/button", verse: @verse, bookmarked: @bookmarked %>
-  </template>
-</turbo-stream>
-```
+**Note:** Bookmarks, notes, and interactive features will be added in Phase 2.
+Phase 1 focuses on static reading pages only.
 
 ## 🔧 Configuration Files
 
@@ -335,12 +303,10 @@ See TECHNICAL_SPEC.md for complete configuration examples.
 4. **Enable WAL mode** - SQLite performance boost
 5. **Monitor queries** - Use Bullet gem
 
-### Security
-1. **Authenticate users** - Use Devise
-2. **Authorize actions** - Use Pundit
-3. **Validate input** - Always validate user data
-4. **Rate limit** - Use rack-attack
-5. **HTTPS only** - In production
+### Security (For Phase 2 - User Features)
+1. **HTTPS only** - In production
+2. **Rate limiting** - Prevent abuse
+3. Authentication and authorization deferred to Phase 2
 
 ## 🚨 Common Pitfalls to Avoid
 
@@ -350,28 +316,30 @@ See TECHNICAL_SPEC.md for complete configuration examples.
 - Skip licensing (legal risk)
 - Ignore indexes (performance nightmare)
 - Store Bible text in multiple places
-- Forget to backup user data
+
 
 ### ✅ Do This Instead:
-- License or use public domain Bible
-- Use SQLite for everything
-- Get proper licensing
+- Use MEV or WEB for development
+- Use SQLite for Bible text
+- Get proper licensing for production
 - Index all foreign keys and lookups
 - Single source of truth for Bible text
-- Regular automated backups
+- Focus on reading experience first
 
-## 🎯 Success Criteria
+## 🎯 Success Criteria (Phase 1 - Static Reading)
 
-Your MVP is ready when:
+Your Phase 1 MVP is ready when:
+- [ ] Users can browse all books
 - [ ] Users can read any chapter
-- [ ] Navigation works (prev/next, book selector)
-- [ ] Bookmarks save and display correctly
-- [ ] Notes can be created and edited
-- [ ] Search finds verses accurately
+- [ ] Navigation works smoothly (prev/next, book selector)
+- [ ] Red letter text displays correctly
+- [ ] Multi-column layout works on desktop
+- [ ] Side-by-side pages work on tablet landscape
 - [ ] Page loads in <200ms
-- [ ] Mobile responsive
-- [ ] Tests pass
+- [ ] Mobile responsive (single column)
 - [ ] Deployed and accessible
+
+**Phase 2 will add:** User accounts, bookmarks, notes, highlights, search
 
 ## 📞 Getting Help
 

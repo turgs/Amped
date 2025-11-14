@@ -6,6 +6,12 @@
 
 **Target Tech Stack:** Rails 8, Hotwire, Propshaft, Importmaps, SQLite, Hotwire Native
 
+**Development Bible:** Modern English Version (MEV) for development, with transition path to Amplified Bible for production.
+
+**Implementation Approach:**
+- **Phase 1:** Static reading pages only (no user features, no JavaScript interactions)
+- **Phase 2:** Add user authentication, bookmarks, notes, highlights (future)
+
 ---
 
 ## 1. Acquiring Amplified Bible Text with Red Letter
@@ -252,6 +258,8 @@ Similar pros/cons to YAML. Useful for:
 ---
 
 ## 3. Bookmark & Note-Taking Implementation
+
+**Note:** This section describes future Phase 2 features. Phase 1 focuses on static reading pages without user interactions, bookmarks, notes, or highlights.
 
 ### Highlighting & Bookmarking Features
 
