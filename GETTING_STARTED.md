@@ -17,27 +17,36 @@ Before starting development, read the documentation in this order:
 
 ### Step 1: Acquire Bible Data (Do This First!)
 
-**Option A: MEV for Development (RECOMMENDED)**
+**Option A: WEB for Development (RECOMMENDED - 100% FREE)**
 ```bash
-# Modern English Version (MEV) - modern, readable English
-# Contact MEV publishers (Charisma House) for development access
-# Or use WEB (World English Bible) as free public domain alternative
+# World English Bible (WEB) - modern English, 100% public domain
+# Download from https://ebible.org/web/
+# Available in multiple formats: XML, SQL, JSON
+# No licensing needed - completely free forever
 
-# Example: Get WEB from eBible.org
 # Download WEB in SQLite format for easy import
+wget https://ebible.org/web/web_sqlite.zip
+unzip web_sqlite.zip
 ```
 
-**Option B: License Amplified Bible (For Production)**
+**Option B: Request Amplified Bible Evaluation License**
 ```
+For private testing to assess suitability:
+
 1. Email: permissions@lockman.org
-2. Subject: "Bible App License Request - Amplified Bible"
-3. Describe your project (see BIBLE_DATA_GUIDE.md for template)
-4. Budget: $500-$5,000/year
+2. Subject: "Evaluation License Request - Amplified Bible Assessment"
+3. Explain:
+   - Building Bible reading web application
+   - Need to assess Amplified Bible's suitability before licensing
+   - Request short-term evaluation license or sample chapters
+   - Commit to full license if proceeding to production
+4. Budget for full license: $500-$5,000/year
 5. Wait for response (typically 1-2 weeks)
-6. Architecture supports easy migration from MEV to Amplified
+
+See BIBLE_DATA_GUIDE.md for detailed options and legal analysis.
 ```
 
-**Note:** MEV provides modern, readable English for development. WEB is a free public domain alternative. Both transition easily to Amplified Bible for production.
+**Note:** WEB is 100% free with no licensing concerns. Use it for all development. For Amplified Bible testing, request evaluation license from Lockman Foundation. See BIBLE_DATA_GUIDE.md section "ALL Options for Obtaining Amplified Bible" for comprehensive legal analysis.
 
 ### Step 2: Set Up Rails 8 Application
 
@@ -82,7 +91,7 @@ Create import rake task (see TECHNICAL_SPEC.md for complete code):
 touch lib/tasks/bible.rake
 
 # Run import (once you have Bible data)
-rails bible:import_mev  # or import_web if using WEB
+rails bible:import_web  # Import World English Bible (100% free)
 rails bible:setup_fts   # Setup full-text search (optional for phase 1)
 ```
 
@@ -114,7 +123,7 @@ end
 - [ ] Configure deployment (Fly.io or similar)
 
 ### Week 3-4: Bible Text
-- [ ] Obtain MEV text (or WEB as alternative)
+- [ ] Download WEB Bible text (100% free from ebible.org)
 - [ ] Create import scripts
 - [ ] Import Bible data to database
 - [ ] Validate data integrity (31,102 verses)
@@ -193,7 +202,7 @@ rails db:rollback
 rails db:reset
 
 # Import Bible data
-rails bible:import_mev  # or import_web
+rails bible:import_web  # World English Bible (100% free)
 rails bible:setup_fts   # optional for phase 1
 
 # Validate data

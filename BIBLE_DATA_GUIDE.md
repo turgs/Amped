@@ -82,40 +82,203 @@ This guide provides detailed information on how to obtain Bible text data, speci
 
 ---
 
-## 📖 Alternative: Public Domain Bibles
+## 🔍 ALL Options for Obtaining Amplified Bible (For Legal Assessment)
+
+**Context:** This section documents ALL possible ways to obtain Amplified Bible text for private testing and legal assessment, including legal implications of each approach.
+
+### Option 1: Official Licensing (RECOMMENDED - ONLY LEGAL OPTION FOR PRODUCTION)
+
+**How:**
+- Contact Lockman Foundation directly
+- Request evaluation/development license
+- May offer reduced-rate testing license
+
+**Legal Status:** ✅ Fully legal and proper  
+**Cost:** $500-$5,000/year (may negotiate evaluation period)  
+**Data Quality:** ✅ Highest - official, verified text with red letter markup  
+**Risk:** None  
+**Timeline:** 1-4 weeks for response and approval
+
+**Recommendation for Your Situation:**
+- Request a "development and evaluation license" from Lockman Foundation
+- Explain you need to assess suitability before committing to full license
+- They may offer short-term or reduced-cost evaluation license
+- This is the ONLY legally sound approach for any use
+
+### Option 2: Purchase Physical/Digital Copy for Manual Data Entry
+
+**How:**
+- Purchase Amplified Bible (print or digital)
+- Manually type out sample passages for testing
+- Limited to small samples for evaluation
+
+**Legal Status:** ⚠️ Legal for small samples under "personal use"  
+**Cost:** $15-50 for book/ebook  
+**Data Quality:** ⚠️ Manual entry prone to errors  
+**Risk:** Low if kept truly private; cannot be used in production  
+**Limitations:** 
+- Extremely time-consuming
+- Only feasible for small samples (few chapters)
+- Cannot be used for full Bible
+- Cannot be distributed or used publicly
+
+**Recommendation:** Only viable for testing 1-2 sample chapters to evaluate format/layout.
+
+### Option 3: Third-Party Bible Software APIs
+
+**How:**
+- Use Bible Gateway API, YouVersion API, or similar
+- Access through their API for development/testing
+- Subject to their terms of service
+
+**Examples:**
+- Bible Gateway API (discontinued for new signups)
+- YouVersion Bible API (requires partnership)
+- Biblia API (check if Amplified is available)
+
+**Legal Status:** ⚠️ Depends on API provider's terms  
+**Cost:** Varies (some have free tiers)  
+**Data Quality:** ✅ Good - official text  
+**Risk:** Medium - must comply with API terms, may not allow full export  
+**Limitations:**
+- Often rate-limited
+- May not allow downloading/caching full text
+- May not have red letter formatting
+- Not suitable for production use (dependent on third party)
+
+**Current Reality:** Most APIs don't provide Amplified Bible or severely restrict usage.
+
+### Option 4: Purchase Bible Software with Export Capability
+
+**How:**
+- Buy software like Logos, Accordance, or BibleWorks
+- Some versions allow text export for personal use
+- Check license carefully
+
+**Legal Status:** ⚠️ Check End User License Agreement (EULA)  
+**Cost:** $50-500+ for software  
+**Data Quality:** ✅ Good - official text  
+**Risk:** Medium-High - likely violates EULA to use commercially  
+**Limitations:**
+- Most EULAs prohibit commercial redistribution
+- Export features often restricted or removed
+- Cannot be used for production website/app
+
+**Reality:** This approach is NOT appropriate for commercial use and likely violates the software's EULA.
+
+### Option 5: Obtain from Existing Digital Sources (NOT RECOMMENDED)
+
+**Examples:**
+- Downloaded files from file-sharing sites
+- Bible databases on GitHub without proper licensing
+- Scraped from websites
+
+**Legal Status:** ❌ ILLEGAL - Copyright infringement  
+**Cost:** Free but illegal  
+**Data Quality:** Varies (often has errors)  
+**Risk:** ⚠️ **VERY HIGH** - Criminal and civil liability
+
+**Legal Implications:**
+1. **Copyright Infringement** - Violation of 17 U.S.C. § 501
+2. **DMCA Violations** - If circumventing protection measures
+3. **Computer Fraud and Abuse Act (CFAA)** - If accessing without authorization
+4. **Terms of Service Violations** - If scraping websites
+5. **Potential Damages:**
+   - Statutory damages: $750-$30,000 per work (up to $150,000 for willful infringement)
+   - Actual damages plus infringer's profits
+   - Attorney's fees
+   - Injunction preventing use of your app
+
+**IMPORTANT:** 
+- Using unauthorized copies, even for "private testing," creates legal exposure
+- Digital evidence is easily discoverable in litigation
+- "We were just testing" is not a legal defense
+- Once code is written against pirated text, it's harder to switch later
+
+### Option 6: Request Sample Data from Lockman Foundation
+
+**How:**
+- Contact Lockman Foundation
+- Request sample chapters/books for evaluation
+- Explain need for technical and suitability assessment
+
+**Legal Status:** ✅ Legal if granted permission  
+**Cost:** Possibly free or nominal fee  
+**Data Quality:** ✅ Highest - official sample  
+**Risk:** None if permission granted  
+**Likelihood:** Good - publishers often provide samples for legitimate evaluation
+
+**Recommendation:** This is a reasonable middle ground:
+- Shows good faith to copyright holder
+- Provides enough data for technical testing
+- Establishes relationship for future licensing
+- Legally protected
+
+---
+
+## 🎯 Recommended Approach for Your Legal Team
+
+### For Private Testing & Suitability Assessment:
+
+**Path 1: Sample/Evaluation License (BEST)**
+```
+1. Contact Lockman Foundation immediately
+   - Email: permissions@lockman.org
+   - Subject: "Evaluation License Request - Web Application Development"
+   
+2. In your email, explain:
+   - Building Bible reading web application
+   - Need to assess Amplified Bible's suitability
+   - Want to test technical implementation
+   - Seek short-term evaluation license before full commitment
+   - Target audience and app features
+   
+3. Offer to sign NDA or restricted evaluation agreement
+   
+4. Request sample data or evaluation license
+   - Suggest: 3-6 month evaluation period
+   - Limited to development/testing environment
+   - Commit to full license if proceeding to production
+```
+
+**Path 2: Limited Sample for Initial Testing**
+```
+1. Request 2-3 sample books from Lockman Foundation
+   - Enough to test layout, red letter formatting, search
+   - Build and test core features
+   - Assess user experience
+   
+2. Use free WEB Bible for remainder of development
+   
+3. Apply for full license once commitment is made
+```
+
+### Legal Analysis Summary:
+
+| Option | Legality | Practicality | Risk | Recommended |
+|--------|----------|--------------|------|-------------|
+| Official License | ✅ Legal | ✅ High | None | ✅ YES |
+| Sample/Eval License | ✅ Legal | ✅ High | None | ✅ YES |
+| Manual Entry (small samples) | ⚠️ Grey Area | ❌ Low | Low | ⚠️ Only tiny samples |
+| API Access | ⚠️ Depends on Terms | ⚠️ Medium | Medium | ⚠️ Check terms carefully |
+| Bible Software Export | ❌ Likely violates EULA | ⚠️ Medium | High | ❌ NO |
+| Unauthorized Download | ❌ ILLEGAL | ❌ High | ⚠️ VERY HIGH | ❌ NEVER |
+
+---
+
+## 📖 Alternative: Free Public Domain Bible for Development
 
 If Amplified Bible licensing is not feasible initially, consider these free alternatives:
 
-### 1. Modern English Version (MEV) - RECOMMENDED FOR DEVELOPMENT
+### 1. World English Bible (WEB) - RECOMMENDED (100% FREE)
 
 **Pros:**
-- **Modern, readable English** - Contemporary language, easy to understand
-- **Public domain in many contexts** - Check specific licensing
-- Good translation quality
-- No archaic "thee/thou" language
-- Suitable for development and testing
-
-**Cons:**
-- May require licensing verification for commercial use
-- Check with MEV publisher (Military Bible Association/Charisma House)
-- Not the Amplified Bible (target translation)
-
-**Recommendation:** 
-- Use MEV for initial development - modern English, readable
-- Verify licensing terms for your specific use case
-- Easy transition to Amplified Bible for production
-
-**Sources:**
-- Check with Charisma House/MEV publishers for data access
-- May be available through Bible APIs
-
-### 1b. World English Bible (WEB) - FREE ALTERNATIVE
-
-**Pros:**
-- **100% Public domain** - Completely free, no licensing
+- **100% Public domain** - Completely free, no licensing needed
 - **Modern English** - No archaic language
 - Actively maintained
 - Similar structure to commercial translations
+- Good readability
+- **Guaranteed free forever** - No ambiguity
 
 **Cons:**
 - Less well-known than MEV or other modern translations
@@ -125,7 +288,33 @@ If Amplified Bible licensing is not feasible initially, consider these free alte
 - https://ebible.org/web/ (Multiple formats: XML, SQL, etc.)
 - https://github.com/thiagobodruk/bible (JSON format)
 
-### 1c. King James Version (KJV) - LEGACY OPTION
+**Recommendation:** 
+- **Use WEB for all development and testing**
+- 100% free with no licensing concerns
+- Easy transition to Amplified Bible for production
+- No risk, no cost, immediate availability
+
+### 2. Modern English Version (MEV) - Check Licensing
+
+**Note:** MEV is NOT public domain.
+
+**Pros:**
+- **Modern, readable English** - Contemporary language
+- Good translation quality
+- No archaic "thee/thou" language
+
+**Cons:**
+- **Copyrighted by Charisma House** - Requires licensing verification
+- May require commercial license fees
+- Licensing terms unclear for web applications
+- Not recommended without confirmed free license
+
+**Recommendation:** 
+- Do NOT use MEV unless you confirm it's free for your use case
+- Contact Charisma House to verify licensing requirements
+- Use WEB instead - guaranteed free
+
+### 3. King James Version (KJV) - LEGACY OPTION
 
 **Note:** Not recommended for this project due to archaic language.
 
@@ -140,19 +329,7 @@ If Amplified Bible licensing is not feasible initially, consider these free alte
 **Sources:**
 - https://github.com/scrollmapper/bible_databases (KJV in SQLite)
 
-### 2. World English Bible (WEB) - RECOMMENDED FOR DEVELOPMENT
-
-**Pros:**
-- **Modern English** - No archaic language!
-- **Public domain** - Completely free, no licensing
-- Close to ASV but updated for contemporary readers
-- Actively maintained
-- Good readability
-- **Best free option for modern English**
-
-
-
-### 2. American Standard Version (ASV)
+### 4. American Standard Version (ASV)
 
 **Pros:**
 - Public domain
@@ -517,18 +694,19 @@ end
 
 ## 📋 Recommended Approach: Step-by-Step
 
-### Phase 1: Start with MEV for Development (Week 1-2)
+### Phase 1: Start with WEB for Development (Week 1-2)
 
-**Objective:** Get app working with modern English Bible
+**Objective:** Get app working with modern English Bible (100% free)
 
-1. **Obtain MEV text**
-   - Contact MEV publishers for development license
-   - Or use WEB (World English Bible) as free alternative
+1. **Obtain WEB text**
+   - Download from https://ebible.org/web/
+   - 100% public domain, no licensing needed
+   - Available in multiple formats: XML, SQL, JSON
    - SQLite format for easy import
 
 2. **Import Data**
    ```bash
-   rails bible:import_mev
+   rails bible:import_web
    ```
 
 3. **Build Core Features**
@@ -560,7 +738,7 @@ end
    - Features: Reading, bookmarks, notes, search
 
 3. **Provide Demo**
-   - Show working MEV or WEB version
+   - Show working WEB version
    - Demonstrate reading interface
    - Professional presentation
 
@@ -791,10 +969,10 @@ end
 
 ### Decision Matrix
 
-| Requirement | MEV/WEB (Free/Licensed) | API.Bible (Free Tier) | Amplified (Licensed) |
+| Requirement | WEB (100% Free) | API.Bible (Free Tier) | Amplified (Licensed) |
 |-------------|-------------------------|-----------------------|----------------------|
-| Cost | Verify/FREE | FREE-$99/mo | $500-$5,000/year |
-| Legal | ✅ Safe | ✅ Safe | ✅ Safe (with license) |
+| Cost | **FREE** | FREE-$99/mo | $500-$5,000/year |
+| Legal | ✅ 100% Safe | ✅ Safe | ✅ Safe (with license) |
 | Modern English | ✅ Yes | Varies | ✅ Yes |
 | Red Letter | ✅ Available | ❌ Limited | ✅ Yes |
 | Offline Use | ✅ Yes | ❌ API Only | ✅ Yes |
@@ -804,7 +982,7 @@ end
 ### Recommended Path
 
 ```
-START HERE → Use MEV (modern English)
+START HERE → Use WEB (100% free, modern English)
     ↓
 Build core features
     ↓
@@ -822,22 +1000,23 @@ LAUNCH with Amplified Bible
 ## 🎯 Action Items
 
 ### Immediate (Today)
-- [ ] Obtain MEV text (contact publishers or use WEB as alternative)
+- [ ] Download WEB Bible text (100% free from ebible.org)
 - [ ] Create import script
 - [ ] Test data integrity
 - [ ] Build basic static reading pages
 
 ### Short-term (This Week)
-- [ ] Draft email to Lockman Foundation (for Amplified Bible)
-- [ ] Prepare project description
+- [ ] Draft email to Lockman Foundation requesting evaluation/sample license for Amplified Bible
+- [ ] Prepare project description for legal team review
 - [ ] Create budget projection
-- [ ] Set up demo environment
+- [ ] Set up demo environment with WEB
 
 ### Medium-term (This Month)
-- [ ] Submit license application for Amplified Bible
-- [ ] Continue building with MEV
+- [ ] Submit license application for Amplified Bible (or evaluation license request)
+- [ ] Continue building with WEB (100% legal, no concerns)
 - [ ] Focus on static reading interface first
 - [ ] Test with users
+- [ ] Request Amplified Bible sample chapters for evaluation if full license not yet approved
 
 ### Long-term (Next 3 Months)
 - [ ] Finalize license agreement

@@ -6,7 +6,7 @@
 
 **Target Tech Stack:** Rails 8, Hotwire, Propshaft, Importmaps, SQLite, Hotwire Native
 
-**Development Bible:** Modern English Version (MEV) for development, with transition path to Amplified Bible for production.
+**Development Bible:** World English Bible (WEB) - 100% free, modern English, public domain. For Amplified Bible testing, request evaluation license from Lockman Foundation. See BIBLE_DATA_GUIDE.md for all options.
 
 **Implementation Approach:**
 - **Phase 1:** Static reading pages only (no user features, no JavaScript interactions)
