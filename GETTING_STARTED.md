@@ -50,14 +50,12 @@ rails new amped \
 
 cd amped
 
-# Add essential gems
-bundle add devise
-bundle add pundit
-bundle add pagy
+# Add essential gems (Phase 1 - minimal)
+bundle add pagy  # For pagination if needed
 
-# Setup authentication
-rails generate devise:install
-rails generate devise User
+# Note: Authentication deferred to Phase 2
+# Phase 2 will add: authorization with Pundit
+# No authentication gems needed for Phase 1 static pages
 ```
 
 ### Step 3: Create Database Schema (Bible Content Only - Phase 1)

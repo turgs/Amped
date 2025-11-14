@@ -48,30 +48,18 @@ ActiveRecord::Schema[7.1].define(version: 2024_XX_XX_XXXXXX) do
     t.index ["red_letter"], name: "index_verses_on_red_letter"
   end
 
-  # User Tables
+  # User Tables (Phase 2 - deferred)
+  # Note: User schema will be determined when authentication solution is chosen
+  # Will use Pundit for authorization, authentication solution TBD
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
-    t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.integer "sign_in_count", default: 0, null: false
-    t.datetime "current_sign_in_at"
-    t.datetime "last_sign_in_at"
-    t.string "current_sign_in_ip"
-    t.string "last_sign_in_ip"
-    t.string "confirmation_token"
-    t.datetime "confirmed_at"
-    t.datetime "confirmation_sent_at"
-    t.string "unconfirmed_email"
     t.string "name"
     t.string "username"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     
-    t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
-    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
@@ -714,17 +702,21 @@ CACHE_TTL = {
 
 ---
 
-## Security Implementation
+## Security Implementation (Phase 2)
 
-### Authentication with Devise
+**Note:** Phase 1 is static pages with no authentication. This section applies to Phase 2.
+
+### Authentication (Phase 2)
 
 ```ruby
-# app/models/user.rb
-class User < ApplicationRecord
-  devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable,
-         :confirmable, :trackable
+# Authentication solution TBD for Phase 2
+# Options: Rodauth, Sorcery, or custom solution
+# NOT using Devise
 
+# app/models/user.rb (Phase 2)
+class User < ApplicationRecord
+  # Authentication implementation TBD
+  
   has_many :bookmarks, dependent: :destroy
   has_many :notes, dependent: :destroy
   has_many :collections, dependent: :destroy
@@ -1540,7 +1532,7 @@ DATABASE_URL=sqlite3:storage/production.sqlite3
 RAILS_LOG_TO_STDOUT=enabled
 RAILS_SERVE_STATIC_FILES=enabled
 
-# Email (for Devise)
+# Email (for Phase 2 when authentication is added)
 SMTP_ADDRESS=smtp.sendgrid.net
 SMTP_PORT=587
 SMTP_USERNAME=apikey

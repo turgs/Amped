@@ -10,7 +10,7 @@
 
 **Implementation Approach:**
 - **Phase 1:** Static reading pages only (no user features, no JavaScript interactions)
-- **Phase 2:** Add user authentication, bookmarks, notes, highlights (future)
+- **Phase 2:** Add user authentication (solution TBD), authorization with Pundit, bookmarks, notes, highlights (future)
 
 ---
 
@@ -164,7 +164,8 @@ end
 create_table :users do |t|
   t.string :email, null: false
   t.string :encrypted_password
-  # Devise or other authentication fields
+  # Authentication fields (Phase 2 - solution TBD)
+  # Will use Pundit for authorization
   t.timestamps
   
   t.index :email, unique: true
@@ -1211,14 +1212,17 @@ end
 
 ## 11. Security Considerations
 
-### Authentication & Authorization
+### Authentication & Authorization (Phase 2)
+
+**Note:** Phase 1 has no authentication. This section applies to Phase 2.
 
 ```ruby
-# Use Devise for authentication
-gem 'devise'
-
-# Authorization with Pundit
+# Authorization with Pundit (Phase 2)
 gem 'pundit'
+
+# Authentication solution TBD for Phase 2
+# Options: Rodauth, Sorcery, or custom solution
+# NOT using Devise
 
 # app/policies/note_policy.rb
 class NotePolicy < ApplicationPolicy
@@ -1238,7 +1242,7 @@ end
 
 ### Data Protection
 
-- Encrypt user passwords (Devise default)
+- Encrypt user passwords (when authentication added in Phase 2)
 - Use secure sessions
 - HTTPS in production
 - CSRF protection (Rails default)
@@ -1359,12 +1363,12 @@ rails server -e production
 
 ## 15. Recommended Implementation Timeline
 
-### Week 1-2: Foundation
+### Week 1-2: Foundation (Phase 1)
 - Set up Rails 8 app
 - Configure Hotwire, Propshaft, Importmaps
-- Set up authentication (Devise)
-- Create database schema
+- Create database schema (Bible content only)
 - Set up deployment pipeline
+- Note: Authentication deferred to Phase 2
 
 ### Week 3-4: Bible Text
 - Obtain Bible text (licensed or public domain)
@@ -1440,14 +1444,12 @@ rails server -e production
 # Create new Rails 8 app
 rails new amped --css=tailwind --javascript=importmap --database=sqlite3
 
-# Add essential gems
-bundle add devise
-bundle add pundit
-bundle add pagy
+# Add essential gems (Phase 1 - minimal for static pages)
+bundle add pagy  # For pagination
 
-# Setup authentication
-rails generate devise:install
-rails generate devise User
+# Note: Authentication deferred to Phase 2
+# Phase 2 will add Pundit for authorization
+# Authentication solution TBD (not Devise)
 
 # Create Bible models
 rails generate model Book name:string abbreviation:string testament:integer position:integer
